@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ingstrid Capital | Terminal Dashboard V3.1</title>
+  <style>
+    :root {
+      --bg: #070806;
+      --panel: #10110e;
+      --panel2: #151611;
+      --panel3: #1a1c16;
+      --line: rgba(255,255,255,0.12);
+      --line2: rgba(212,178,106,0.18);
+      --text: #f2eee6;
+      --muted: #a9a397;
+      --muted2: #777166;
+      --gold: #d4b26a;
+      --goldSoft: #e7d7aa;
+      --green: #9ec79a;
+      --red: #c99090;
+      --blue: #a8b6d8;
+      --shadow: 0 24px 80px rgba(0,0,0,0.38);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background:
+        radial-gradient(circle at top right, rgba(212,178,106,0.11), transparent 30%),
+        radial-gradient(circle at 12% 20%, rgba(255,255,255,0.035), transparent 18%),
+        var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      overflow-x: hidden;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      background-image:
+        linear-gradient(to right, #fff 1px, transparent 1px),
+        linear-gradient(to bottom, #fff 1px, transparent 1px);
+      background-size: 48px 48px;
+      z-index: 0;
+    }
+
+    button, input, select, textarea { font-family: inherit; }
+    .terminal { position: relative; z-index: 1; min-height: 100vh; display: grid; grid-template-rows: auto auto 1fr; }
+
+    .top-strip {
+      height: 34px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(10,11,9,0.92);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 14px;
+      color: var(--muted);
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .brand-code { color: var(--gold); font-weight: 800; letter-spacing: 0.18em; }
+    .ticker-tape { display: flex; align-items: center; gap: 18px; }
+    .tape-item strong { color: var(--text); }
+    .up { color: var(--green); }
+    .down { color: var(--red); }
+    .flat { color: var(--gold); }
+
+    .command-bar {
+      border-bottom: 1px solid var(--line);
+      background: rgba(17,18,16,0.94);
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 250px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+
+    .brand { display: flex; align-items: center; gap: 11px; }
+    .mark { position: relative; width: 34px; height: 34px; border: 1px solid rgba(212,178,106,0.58); border-radius: 999px; flex-shrink: 0; }
+    .mark::before { content: ""; position: absolute; inset: 6px; border: 1px solid rgba(212,178,106,0.72); border-radius: 999px; }
+    .mark::after { content: ""; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; transform: translate(-50%,-50%); background: var(--gold); border-radius: 999px; }
+    .brand-main { font-size: 13px; font-weight: 900; letter-spacing: 0.22em; }
+    .brand-sub { font-size: 10px; color: var(--muted2); letter-spacing: 0.24em; margin-top: 2px; }
+
+    .command { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; border: 1px solid var(--line2); background: rgba(212,178,106,0.065); border-radius: 14px; padding: 8px 10px; }
+    .cmd-label { color: var(--gold); font-size: 12px; font-weight: 900; }
+    .cmd-input { width: 100%; background: transparent; border: 0; outline: 0; color: var(--text); font-size: 14px; text-transform: uppercase; }
+    .cmd-help { color: var(--muted2); font-size: 11px; white-space: nowrap; }
+
+    .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .btn { border: 1px solid var(--line); background: rgba(255,255,255,0.035); color: var(--text); padding: 10px 12px; border-radius: 12px; cursor: pointer; font-size: 12px; font-weight: 800; transition: 0.16s ease; }
+    .btn:hover { background: rgba(255,255,255,0.07); transform: translateY(-1px); }
+    .btn-primary { background: var(--goldSoft); color: #10110e; border-color: var(--goldSoft); }
+    .btn-primary:hover { background: #f1e3bc; }
+    .btn-danger { background: rgba(201,144,144,0.10); color: var(--red); border-color: rgba(201,144,144,0.25); }
+
+    .main-grid { display: grid; grid-template-columns: 240px 1.4fr 0.9fr; grid-template-rows: auto auto 1fr; gap: 10px; padding: 10px; }
+    .panel { border: 1px solid var(--line); background: rgba(16,17,14,0.9); border-radius: 14px; overflow: hidden; box-shadow: 0 18px 50px rgba(0,0,0,0.22); min-width: 0; }
+    .panel-header { min-height: 38px; padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 10px; align-items: center; background: rgba(255,255,255,0.025); }
+    .panel-title { color: var(--gold); font-size: 12px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
+    .panel-meta { color: var(--muted2); font-size: 11px; }
+    .panel-body { padding: 12px; }
+
+    .watchlist { grid-row: span 3; }
+    .watch-row { display: grid; grid-template-columns: 54px 1fr auto; gap: 8px; align-items: center; padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.07); cursor: pointer; }
+    .watch-row:hover, .watch-row.active { background: rgba(212,178,106,0.08); }
+    .watch-symbol { font-weight: 900; color: var(--text); }
+    .watch-name { color: var(--muted2); font-size: 11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .watch-price { text-align: right; font-size: 12px; }
+
+    .security-card { display: grid; grid-template-columns: 1fr 220px; gap: 14px; align-items: stretch; }
+    .security-main h1 { margin: 0; font-size: clamp(36px, 5vw, 70px); line-height: 0.92; letter-spacing: -0.08em; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    .security-sub { margin-top: 10px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .quote-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; }
+    .quote-box { border: 1px solid rgba(255,255,255,0.09); background: rgba(255,255,255,0.025); border-radius: 12px; padding: 10px; }
+    .quote-label { color: var(--muted2); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; }
+    .quote-value { margin-top: 6px; font-size: 18px; font-weight: 900; }
+
+    .score-card { border: 1px solid var(--line2); border-radius: 14px; background: rgba(212,178,106,0.055); padding: 14px; display: grid; place-items: center; text-align: center; }
+    .score-ring { width: 132px; height: 132px; border-radius: 999px; background: conic-gradient(var(--gold) calc(var(--score)*1%), rgba(255,255,255,0.08) 0); display: grid; place-items: center; margin-bottom: 12px; }
+    .score-inner { width: 102px; height: 102px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); display: grid; place-items: center; }
+    .score-inner strong { display: block; font-size: 33px; letter-spacing: -0.06em; }
+    .score-inner span { color: var(--muted2); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+    .score-caption { color: var(--muted); line-height: 1.5; font-size: 12px; }
+
+    .function-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .function-key { border: 1px solid var(--line); background: rgba(255,255,255,0.03); border-radius: 12px; padding: 10px; cursor: pointer; min-height: 66px; transition: 0.16s ease; }
+    .function-key:hover, .function-key.active { background: rgba(212,178,106,0.1); border-color: rgba(212,178,106,0.28); }
+    .function-key strong { display: block; color: var(--gold); font-size: 12px; }
+    .function-key span { display: block; color: var(--muted); font-size: 11px; margin-top: 5px; line-height: 1.35; }
+
+    .matrix { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .matrix-box { border: 1px solid var(--line); background: rgba(255,255,255,0.025); border-radius: 12px; padding: 11px; min-height: 82px; }
+    .matrix-box label { display: block; color: var(--muted2); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+    .matrix-box strong { display: block; margin-top: 8px; font-size: 20px; }
+    .matrix-box small { display: block; margin-top: 7px; color: var(--muted); line-height: 1.35; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,0.07); text-align: right; white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: var(--muted2); font-size: 10px; letter-spacing: 0.10em; text-transform: uppercase; background: rgba(255,255,255,0.02); }
+    tr:hover td { background: rgba(255,255,255,0.025); }
+
+    .option-chain { max-height: 300px; overflow: auto; }
+    .bid { color: var(--green); }
+    .ask { color: var(--red); }
+    .mid { color: var(--gold); }
+
+    .news-list, .alert-list, .journal-list { display: grid; gap: 8px; }
+    .news-item, .alert-item, .journal-item { border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.025); border-radius: 12px; padding: 10px; }
+    .news-time, .alert-level, .journal-date { color: var(--gold); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+    .news-headline, .alert-text, .journal-title { margin-top: 5px; color: var(--text); font-size: 12px; line-height: 1.45; }
+    .news-note, .journal-note { margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+
+    .form-grid { display: grid; gap: 10px; }
+    .field label { display: block; color: var(--muted2); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+    input, select, textarea { width: 100%; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.035); color: var(--text); border-radius: 10px; padding: 10px; outline: 0; font-size: 12px; }
+    textarea { min-height: 74px; resize: vertical; }
+    option { background: var(--panel); }
+    input:focus, textarea:focus, select:focus { border-color: rgba(212,178,106,0.42); }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+    .terminal-output { border: 1px solid rgba(212,178,106,0.20); background: rgba(212,178,106,0.055); border-radius: 12px; padding: 12px; color: #d8d2c7; font-size: 12px; line-height: 1.6; }
+    .module-view { display: none; }
+    .module-view.active { display: block; }
+    .footer-console { grid-column: 2 / 4; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    .backup-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .data-note { color: var(--muted); font-size: 11px; line-height: 1.5; margin-top: 8px; }
+
+    .toast { position: fixed; right: 18px; bottom: 18px; border: 1px solid rgba(212,178,106,0.26); background: rgba(16,17,14,0.96); color: var(--text); padding: 12px 14px; border-radius: 12px; opacity: 0; transform: translateY(8px); transition: 0.18s ease; pointer-events: none; z-index: 10; font-size: 12px; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 1240px) {
+      .command-bar { grid-template-columns: 1fr; }
+      .main-grid { grid-template-columns: 1fr; }
+      .watchlist, .footer-console { grid-column: auto; grid-row: auto; }
+      .footer-console { grid-template-columns: 1fr; }
+      .security-card { grid-template-columns: 1fr; }
+      .function-grid, .matrix { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .quote-grid, .function-grid, .matrix, .two, .three { grid-template-columns: 1fr; }
+      .top-actions { flex-wrap: wrap; }
+      .main-grid { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal">
+    <div class="top-strip">
+      <span class="brand-code">INGSTRID TERMINAL V3.1</span>
+      <div class="ticker-tape" id="tickerTape"></div>
+    </div>
+
+    <div class="command-bar">
+      <div class="brand">
+        <div class="mark"></div>
+        <div>
+          <div class="brand-main">INGSTRID</div>
+          <div class="brand-sub">CAPITAL OS</div>
+        </div>
+      </div>
+
+      <div class="command">
+        <span class="cmd-label">COMMAND</span>
+        <input id="commandInput" class="cmd-input" value="SOFI ANALYZE" onkeydown="handleCommand(event)" />
+        <span class="cmd-help">TRY: SOFI, HOOD, RKLB, PLTR, OC, JOURNAL, RISK, DATA</span>
+      </div>
+
+      <div class="top-actions">
+        <button class="btn" onclick="window.location.href='index.html'">HOME</button>
+        <button class="btn" onclick="runCommand()">RUN</button>
+        <button class="btn" onclick="showModule('journalModule')">JOURNAL</button>
+        <button class="btn" onclick="showModule('dataModule')">DATA</button>
+        <button class="btn btn-primary" onclick="showModule('tradeModule')">LOG TRADE</button>
+      </div>
+    </div>
+
+    <main class="main-grid">
+      <section class="panel watchlist">
+        <div class="panel-header"><div class="panel-title">Watchlist</div><div class="panel-meta">Demo data</div></div>
+        <div id="watchlistBody"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header"><div class="panel-title">Security Monitor</div><div class="panel-meta" id="securityTime">Updated now</div></div>
+        <div class="panel-body security-card">
+          <div class="security-main">
+            <h1 id="securityTicker">SOFI</h1>
+            <div class="security-sub" id="securityDesc">SoFi Technologies · Income overlay candidate · Demo market data</div>
+            <div class="quote-grid">
+              <div class="quote-box"><div class="quote-label">Last</div><div class="quote-value" id="lastPrice">22.00</div></div>
+              <div class="quote-box"><div class="quote-label">Change</div><div class="quote-value up" id="changePct">+1.25%</div></div>
+              <div class="quote-box"><div class="quote-label">IV</div><div class="quote-value neutral" id="ivValue">58%</div></div>
+              <div class="quote-box"><div class="quote-label">DTE</div><div class="quote-value" id="dteValue">30</div></div>
+            </div>
+          </div>
+          <div class="score-card">
+            <div class="score-ring" id="scoreRing" style="--score:74"><div class="score-inner"><div><strong id="probScore">74</strong><span>Setup</span></div></div></div>
+            <div class="score-caption" id="scoreCaption">Selective income candidate. Confirm events and sizing before entry.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header"><div class="panel-title">Alert Stack</div><div class="panel-meta">Risk-first</div></div>
+        <div class="panel-body alert-list" id="alertList"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header"><div class="panel-title">Function Keys</div><div class="panel-meta">Terminal modules</div></div>
+        <div class="panel-body function-grid">
+          <div class="function-key active" onclick="showModule('overviewModule', this)"><strong>OV</strong><span>Overview</span></div>
+          <div class="function-key" onclick="showModule('optionsModule', this)"><strong>OC</strong><span>Option chain</span></div>
+          <div class="function-key" onclick="showModule('strategyModule', this)"><strong>STGY</strong><span>Strategy builder</span></div>
+          <div class="function-key" onclick="showModule('journalModule', this)"><strong>JNL</strong><span>Trade journal</span></div>
+          <div class="function-key" onclick="showModule('dataModule', this)"><strong>DATA</strong><span>Import/export</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header"><div class="panel-title" id="moduleTitle">Overview Module</div><div class="panel-meta">Command-driven workspace</div></div>
+        <div class="panel-body">
+          <div id="overviewModule" class="module-view active">
+            <div class="matrix">
+              <div class="matrix-box"><label>Expected Move</label><strong id="expectedMove">±8.2%</strong><small>IV-derived demo range.</small></div>
+              <div class="matrix-box"><label>Support Buffer</label><strong id="supportBuffer">11.4%</strong><small>Distance to support.</small></div>
+              <div class="matrix-box"><label>Suggested Bias</label><strong id="biasText">Income</strong><small>Premium collection only.</small></div>
+              <div class="matrix-box"><label>Risk Flag</label><strong id="riskFlag">Medium</strong><small>Check catalyst calendar.</small></div>
+            </div>
+            <div class="terminal-output" style="margin-top:10px" id="aiOutput">INGSTRID NOTE: Setup is acceptable for small-size income if support holds, IV remains elevated, and event calendar is clean.</div>
+          </div>
+
+          <div id="optionsModule" class="module-view">
+            <div class="option-chain"><table><thead><tr><th>Strike</th><th>Put Bid</th><th>Put Ask</th><th>Put Delta</th><th>Call Bid</th><th>Call Ask</th><th>Call Delta</th><th>Signal</th></tr></thead><tbody id="optionRows"></tbody></table></div>
+          </div>
+
+          <div id="strategyModule" class="module-view">
+            <div class="three">
+              <div class="field"><label>Market View</label><select id="marketView" onchange="buildStrategy()"><option>Neutral / Range-bound</option><option>Bullish</option><option>Bearish</option><option>Income Only</option></select></div>
+              <div class="field"><label>Risk Preference</label><select id="riskPref" onchange="buildStrategy()"><option>Conservative</option><option>Balanced</option><option>Aggressive</option></select></div>
+              <div class="field"><label>Ownership</label><select id="ownPref" onchange="buildStrategy()"><option>Willing to own</option><option>Prefer no assignment</option><option>Already own shares</option></select></div>
+            </div>
+            <div class="terminal-output" style="margin-top:10px" id="strategyOutput"></div>
+          </div>
+
+          <div id="journalModule" class="module-view">
+            <div class="backup-controls">
+              <button class="btn" onclick="exportCSV()">EXPORT CSV</button>
+              <button class="btn" onclick="document.getElementById('csvImport').click()">IMPORT CSV</button>
+              <button class="btn" onclick="backupJSON()">BACKUP JSON</button>
+              <button class="btn" onclick="document.getElementById('jsonRestore').click()">RESTORE JSON</button>
+              <button class="btn btn-danger" onclick="clearJournal()">CLEAR JOURNAL</button>
+            </div>
+            <input id="csvImport" type="file" accept=".csv,text/csv" style="display:none" onchange="importCSV(event)">
+            <input id="jsonRestore" type="file" accept=".json,application/json" style="display:none" onchange="restoreJSON(event)">
+            <div class="two" style="margin-bottom:10px"><input id="journalSearch" placeholder="Search ticker / thesis" oninput="renderJournal()" /><select id="journalStatus" onchange="renderJournal()"><option>All Status</option><option>Planned</option><option>Open</option><option>Win</option><option>Loss</option></select></div>
+            <div style="overflow:auto; max-height: 320px;"><table><thead><tr><th>Date</th><th>Ticker</th><th>Strategy</th><th>Status</th><th>P/L</th><th>Risk</th><th>Thesis</th><th></th></tr></thead><tbody id="journalRows"></tbody></table></div>
+            <div class="data-note">Journal data is saved in this browser using local storage. Use CSV or JSON backup before switching computers/browsers.</div>
+          </div>
+
+          <div id="riskModule" class="module-view">
+            <div class="matrix">
+              <div class="matrix-box"><label>Open Risk</label><strong id="openRisk">$0</strong><small>Current open collateral.</small></div>
+              <div class="matrix-box"><label>Win Rate</label><strong id="winRate">0%</strong><small>Closed trades.</small></div>
+              <div class="matrix-box"><label>Discipline</label><strong id="disciplineScore">0</strong><small>Average process score.</small></div>
+              <div class="matrix-box"><label>Risk State</label><strong id="riskState">Normal</strong><small>Based on open risk + discipline.</small></div>
+            </div>
+            <div class="terminal-output" style="margin-top:10px" id="riskOutput"></div>
+          </div>
+
+          <div id="dataModule" class="module-view">
+            <div class="matrix">
+              <div class="matrix-box"><label>Total Records</label><strong id="dataCount">0</strong><small>Trades in local storage.</small></div>
+              <div class="matrix-box"><label>Storage</label><strong>Local</strong><small>Browser-based prototype.</small></div>
+              <div class="matrix-box"><label>CSV</label><strong>Ready</strong><small>Import/export enabled.</small></div>
+              <div class="matrix-box"><label>JSON</label><strong>Ready</strong><small>Backup/restore enabled.</small></div>
+            </div>
+            <div class="backup-controls" style="margin-top:12px">
+              <button class="btn btn-primary" onclick="exportCSV()">EXPORT CSV</button>
+              <button class="btn" onclick="document.getElementById('csvImportData').click()">IMPORT CSV</button>
+              <button class="btn" onclick="backupJSON()">BACKUP JSON</button>
+              <button class="btn" onclick="document.getElementById('jsonRestoreData').click()">RESTORE JSON</button>
+              <button class="btn" onclick="restoreSampleData()">RESTORE SAMPLE DATA</button>
+              <button class="btn btn-danger" onclick="clearJournal()">CLEAR JOURNAL</button>
+            </div>
+            <input id="csvImportData" type="file" accept=".csv,text/csv" style="display:none" onchange="importCSV(event)">
+            <input id="jsonRestoreData" type="file" accept=".json,application/json" style="display:none" onchange="restoreJSON(event)">
+            <div class="terminal-output" style="margin-top:10px">DATA CONTROL: Export CSV for spreadsheet review. Use JSON backup for full restore. CSV import accepts columns: date, ticker, strategy, status, pnl, risk, thesis, lesson, discipline.</div>
+          </div>
+
+          <div id="tradeModule" class="module-view">
+            <div class="form-grid">
+              <div class="three">
+                <div class="field"><label>Date</label><input id="tradeDate" type="date"></div>
+                <div class="field"><label>Ticker</label><input id="tradeTicker" placeholder="SOFI"></div>
+                <div class="field"><label>Status</label><select id="tradeStatus"><option>Planned</option><option>Open</option><option>Win</option><option>Loss</option></select></div>
+              </div>
+              <div class="three">
+                <div class="field"><label>Strategy</label><select id="tradeStrategy"><option>Cash-Secured Put</option><option>Covered Call</option><option>Wheel</option><option>Long Equity</option><option>Credit Spread</option></select></div>
+                <div class="field"><label>P/L</label><input id="tradePnl" type="number" placeholder="250"></div>
+                <div class="field"><label>Risk / Collateral</label><input id="tradeRisk" type="number" placeholder="1800"></div>
+              </div>
+              <div class="field"><label>Thesis</label><textarea id="tradeThesis" placeholder="Why this trade? What edge exists?"></textarea></div>
+              <div class="field"><label>Exit / Lesson</label><textarea id="tradeLesson" placeholder="Profit target, loss trigger, assignment plan, lesson."></textarea></div>
+              <button class="btn btn-primary" onclick="addTrade()">SAVE TO JOURNAL</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="footer-console">
+        <div class="panel"><div class="panel-header"><div class="panel-title">News / Catalyst</div><div class="panel-meta">Demo feed</div></div><div class="panel-body news-list" id="newsList"></div></div>
+        <div class="panel"><div class="panel-header"><div class="panel-title">Income Monitor</div><div class="panel-meta">Premium logic</div></div><div class="panel-body"><div class="matrix" style="grid-template-columns:1fr 1fr"><div class="matrix-box"><label>Premium / Price</label><strong id="premiumYield">2.0%</strong><small>Demo yield proxy.</small></div><div class="matrix-box"><label>Close Rule</label><strong>50–70%</strong><small>Harvest premium early.</small></div></div></div></div>
+        <div class="panel"><div class="panel-header"><div class="panel-title">Journal Snapshot</div><div class="panel-meta">Latest</div></div><div class="panel-body journal-list" id="journalSnapshot"></div></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast">Ready.</div>
+
+  <script>
+    const STORAGE_KEY = 'ingstridTerminalV31Trades';
+
+    const securities = {
+      SOFI: { name: 'SoFi Technologies', price: 22.00, change: 1.25, iv: 58, dte: 30, support: 19.50, premium: 0.45, desc: 'Income overlay candidate · fintech growth with volatility premium' },
+      HOOD: { name: 'Robinhood Markets', price: 82.40, change: -0.85, iv: 64, dte: 35, support: 74.00, premium: 1.85, desc: 'High beta brokerage / crypto-linked income candidate' },
+      RKLB: { name: 'Rocket Lab', price: 43.10, change: 2.15, iv: 72, dte: 45, support: 38.00, premium: 1.25, desc: 'Long-term growth holding · income overlay only with strict sizing' },
+      PLTR: { name: 'Palantir', price: 128.20, change: 0.35, iv: 51, dte: 28, support: 114.00, premium: 2.10, desc: 'Core AI software exposure · valuation discipline required' },
+      WDC: { name: 'Western Digital', price: 118.60, change: -1.10, iv: 47, dte: 32, support: 106.00, premium: 2.55, desc: 'Cyclical storage / semiconductor-linked premium candidate' }
+    };
+
+    const sampleTrades = [
+      { id: crypto.randomUUID(), date: '2026-04-22', ticker: 'SOFI', strategy: 'Covered Call', status: 'Win', pnl: 420, risk: 0, thesis: 'Harvest premium while keeping long-term position.', lesson: 'Keep delta low before catalyst weeks.', discipline: 83 },
+      { id: crypto.randomUUID(), date: '2026-04-19', ticker: 'HOOD', strategy: 'Cash-Secured Put', status: 'Open', pnl: 0, risk: 9000, thesis: 'Willing to own lower after pullback with attractive IV.', lesson: 'Monitor support and IV contraction.', discipline: 83 },
+      { id: crypto.randomUUID(), date: '2026-04-12', ticker: 'RKLB', strategy: 'Wheel', status: 'Win', pnl: 1850, risk: 7800, thesis: 'Long-term bullish; income overlay only.', lesson: 'Premium reduced effective cost basis.', discipline: 100 },
+      { id: crypto.randomUUID(), date: '2026-04-04', ticker: 'PLTR', strategy: 'Long Equity', status: 'Loss', pnl: -430, risk: 1700, thesis: 'Core position but valuation and momentum stretched.', lesson: 'Avoid adding aggressively near extended levels.', discipline: 67 },
+      { id: crypto.randomUUID(), date: '2026-03-28', ticker: 'WDC', strategy: 'Cash-Secured Put', status: 'Win', pnl: 1000, risk: 0, thesis: 'High IV setup with acceptable ownership price.', lesson: 'Assignment plan was clear.', discipline: 83 }
+    ];
+
+    let activeTicker = 'SOFI';
+    let trades = loadTrades();
+
+    function loadTrades() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (Array.isArray(stored)) return stored;
+      } catch(e) {}
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleTrades));
+      return [...sampleTrades];
+    }
+
+    function saveTrades() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
+      updateDataCount();
+    }
+
+    function money(v) { const n = Number(v || 0); return (n > 0 ? '+' : n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString(); }
+    function percent(v) { return (v > 0 ? '+' : '') + v.toFixed(2) + '%'; }
+    function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(window.toastTimer); window.toastTimer = setTimeout(() => t.classList.remove('show'), 1800); }
+    function safeText(value) { return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    function setupScore(s) {
+      const supportBuffer = ((s.price - s.support) / s.price) * 100;
+      let score = 48;
+      score += Math.min(20, supportBuffer * 1.7);
+      score += Math.min(14, (s.premium / s.price) * 100 * 5.5);
+      score += s.iv > 35 && s.iv < 85 ? 12 : s.iv >= 85 ? 4 : 6;
+      score += s.dte <= 45 ? 8 : 2;
+      return Math.max(15, Math.min(95, Math.round(score)));
+    }
+
+    function expectedMove(s) { return s.price * (s.iv / 100) * Math.sqrt(s.dte / 365); }
+
+    function renderTape() {
+      document.getElementById('tickerTape').innerHTML = Object.entries(securities).map(([sym, s]) => `<span class="tape-item"><strong>${sym}</strong> ${s.price.toFixed(2)} <span class="${s.change >= 0 ? 'up' : 'down'}">${percent(s.change)}</span></span>`).join('');
+    }
+
+    function renderWatchlist() {
+      document.getElementById('watchlistBody').innerHTML = Object.entries(securities).map(([sym, s]) => `<div class="watch-row ${sym === activeTicker ? 'active' : ''}" onclick="setTicker('${sym}')"><div class="watch-symbol">${sym}</div><div><div>${s.name}</div><div class="watch-name">${s.desc}</div></div><div class="watch-price"><strong>${s.price.toFixed(2)}</strong><br><span class="${s.change >= 0 ? 'up' : 'down'}">${percent(s.change)}</span></div></div>`).join('');
+    }
+
+    function setTicker(sym) {
+      activeTicker = sym;
+      document.getElementById('commandInput').value = sym + ' ANALYZE';
+      document.getElementById('tradeTicker').value = sym;
+      renderSecurity();
+      renderWatchlist();
+      renderOptions();
+      renderNews();
+      showToast(sym + ' loaded.');
+    }
+
+    function renderSecurity() {
+      const s = securities[activeTicker];
+      const score = setupScore(s);
+      const move = expectedMove(s);
+      const supportBuffer = ((s.price - s.support) / s.price) * 100;
+      const premiumYield = (s.premium / s.price) * 100;
+      document.getElementById('securityTicker').textContent = activeTicker;
+      document.getElementById('securityDesc').textContent = s.name + ' · ' + s.desc;
+      document.getElementById('lastPrice').textContent = s.price.toFixed(2);
+      const change = document.getElementById('changePct');
+      change.textContent = percent(s.change);
+      change.className = 'quote-value ' + (s.change >= 0 ? 'up' : 'down');
+      document.getElementById('ivValue').textContent = s.iv + '%';
+      document.getElementById('dteValue').textContent = s.dte;
+      document.getElementById('probScore').textContent = score;
+      document.getElementById('scoreRing').style.setProperty('--score', score);
+      document.getElementById('scoreCaption').textContent = score >= 80 ? 'High-quality income candidate. Confirm event risk.' : score >= 65 ? 'Selective income candidate. Keep sizing controlled.' : 'Wait for better risk/reward.';
+      document.getElementById('expectedMove').textContent = '±' + ((move / s.price) * 100).toFixed(1) + '%';
+      document.getElementById('supportBuffer').textContent = supportBuffer.toFixed(1) + '%';
+      document.getElementById('biasText').textContent = score >= 80 ? 'Income Candidate' : score >= 65 ? 'Selective' : 'Wait';
+      document.getElementById('riskFlag').textContent = s.iv >= 85 || supportBuffer < 5 ? 'High' : score >= 75 ? 'Low-Med' : 'Medium';
+      document.getElementById('premiumYield').textContent = premiumYield.toFixed(1) + '%';
+      document.getElementById('aiOutput').innerHTML = `INGSTRID NOTE: ${activeTicker} scores <strong>${score}</strong>. Expected move is about <strong>±${move.toFixed(2)}</strong>. Support buffer is <strong>${supportBuffer.toFixed(1)}%</strong>. ${score >= 80 ? 'Setup can be considered for income if event calendar is clean.' : score >= 65 ? 'Use selective sizing and avoid catalyst windows.' : 'Risk/reward is not yet attractive.'}`;
+      document.getElementById('securityTime').textContent = new Date().toLocaleTimeString();
+      renderAlerts();
+    }
+
+    function renderAlerts() {
+      const s = securities[activeTicker];
+      const score = setupScore(s);
+      const supportBuffer = ((s.price - s.support) / s.price) * 100;
+      const alerts = [];
+      if (supportBuffer < 8) alerts.push(['HIGH', 'Price is close to support. Do not oversize cash-secured puts.']);
+      if (s.iv > 70) alerts.push(['WATCH', 'IV is elevated. Good premium, but higher gap risk.']);
+      if (s.dte > 45) alerts.push(['WATCH', 'DTE is longer than preferred for faster theta capture.']);
+      if (score >= 80) alerts.push(['OK', 'Setup quality is strong enough for further review.']);
+      if (!alerts.length) alerts.push(['OK', 'No major demo risk flags. Still verify earnings and macro events.']);
+      document.getElementById('alertList').innerHTML = alerts.map(([level, text]) => `<div class="alert-item"><div class="alert-level">${level}</div><div class="alert-text">${text}</div></div>`).join('');
+    }
+
+    function renderOptions() {
+      const s = securities[activeTicker];
+      const strikes = [-20,-15,-10,-5,0,5,10,15,20].map(p => Math.round((s.price * (1 + p/100)) / 1) * 1);
+      document.getElementById('optionRows').innerHTML = strikes.map(k => {
+        const distance = Math.abs(k - s.price) / s.price;
+        const base = Math.max(0.12, s.premium * Math.exp(-distance * 8));
+        const putDelta = k < s.price ? (-0.5 + distance).toFixed(2) : (-0.5 - distance).toFixed(2);
+        const callDelta = k > s.price ? (0.5 - distance).toFixed(2) : (0.5 + distance).toFixed(2);
+        const signal = k < s.support ? 'Below support' : Math.abs(k - s.support) < 1.5 ? 'Support zone' : k > s.price ? 'Call candidate' : 'Neutral';
+        return `<tr><td>${k.toFixed(0)}</td><td class="bid">${(base*0.92).toFixed(2)}</td><td class="ask">${(base*1.08).toFixed(2)}</td><td>${putDelta}</td><td class="bid">${(base*0.88).toFixed(2)}</td><td class="ask">${(base*1.04).toFixed(2)}</td><td>${callDelta}</td><td class="mid">${signal}</td></tr>`;
+      }).join('');
+    }
+
+    function renderNews() {
+      const rows = [['09:30', activeTicker + ' volatility remains elevated versus trailing range.', 'Review premium after open, avoid chasing wide spreads.'], ['11:00', 'Macro window: rates and CPI sensitivity remain relevant.', 'Reduce size through major macro releases.'], ['14:15', 'Options liquidity check required before execution.', 'Prefer tight bid/ask and sufficient open interest.']];
+      document.getElementById('newsList').innerHTML = rows.map(r => `<div class="news-item"><div class="news-time">${r[0]}</div><div class="news-headline">${r[1]}</div><div class="news-note">${r[2]}</div></div>`).join('');
+    }
+
+    function buildStrategy() {
+      const view = document.getElementById('marketView').value;
+      const risk = document.getElementById('riskPref').value;
+      const own = document.getElementById('ownPref').value;
+      let strategy = 'Cash-Secured Put';
+      let plan = 'Sell put below support only if assignment is acceptable and premium compensates for risk.';
+      if (own === 'Already own shares') { strategy = 'Covered Call'; plan = 'Sell low-delta calls above resistance only if assignment is acceptable.'; }
+      if (view === 'Bullish' && risk !== 'Conservative') { strategy = 'Call Debit Spread'; plan = 'Use defined-risk bullish exposure rather than naked leverage.'; }
+      if (view === 'Bearish') { strategy = 'Protective Put / Bear Put Spread'; plan = 'Use defined-risk downside hedge; avoid overpaying for IV.'; }
+      if (view === 'Income Only' && own === 'Prefer no assignment') { strategy = 'Credit Spread'; plan = 'Use defined-risk premium collection outside expected move.'; }
+      document.getElementById('strategyOutput').innerHTML = `<strong>${strategy}</strong><br>${plan}<br><br>Exit rule: consider closing at 50–70% premium capture or when thesis weakens.`;
+    }
+
+    function renderJournal() {
+      const q = (document.getElementById('journalSearch')?.value || '').toLowerCase();
+      const status = document.getElementById('journalStatus')?.value || 'All Status';
+      const filtered = trades.filter(t => (status === 'All Status' || t.status === status) && [t.ticker,t.strategy,t.thesis,t.lesson].join(' ').toLowerCase().includes(q));
+      document.getElementById('journalRows').innerHTML = filtered.map(t => `<tr><td>${safeText(t.date)}</td><td><strong>${safeText(t.ticker)}</strong></td><td>${safeText(t.strategy)}</td><td>${safeText(t.status)}</td><td class="${t.pnl>0?'up':t.pnl<0?'down':'flat'}">${money(t.pnl)}</td><td>$${Number(t.risk||0).toLocaleString()}</td><td>${safeText(t.thesis)}</td><td><button class="mini-action" onclick="deleteTrade('${t.id}')">DEL</button></td></tr>`).join('');
+      renderJournalSnapshot();
+      renderRisk();
+      updateDataCount();
+    }
+
+    function renderJournalSnapshot() {
+      document.getElementById('journalSnapshot').innerHTML = trades.slice(0,3).map(t => `<div class="journal-item"><div class="journal-date">${safeText(t.date)} · ${safeText(t.ticker)}</div><div class="journal-title">${safeText(t.strategy)} · <span class="${t.pnl>0?'up':t.pnl<0?'down':'flat'}">${money(t.pnl)}</span></div><div class="journal-note">${safeText(t.lesson)}</div></div>`).join('');
+    }
+
+    function renderRisk() {
+      const closed = trades.filter(t => t.status === 'Win' || t.status === 'Loss');
+      const wins = closed.filter(t => t.status === 'Win').length;
+      const winRate = closed.length ? Math.round(wins / closed.length * 100) : 0;
+      const openRisk = trades.filter(t => t.status === 'Open').reduce((s,t)=>s+Number(t.risk||0),0);
+      const discipline = trades.length ? Math.round(trades.reduce((s,t)=>s+Number(t.discipline||0),0)/trades.length) : 0;
+      const riskState = openRisk > 20000 || discipline < 70 ? 'Elevated' : 'Normal';
+      document.getElementById('openRisk').textContent = '$' + openRisk.toLocaleString();
+      document.getElementById('winRate').textContent = winRate + '%';
+      document.getElementById('disciplineScore').textContent = discipline;
+      document.getElementById('riskState').textContent = riskState;
+      document.getElementById('riskOutput').innerHTML = `RISK NOTE: Open collateral is <strong>$${openRisk.toLocaleString()}</strong>. Discipline score is <strong>${discipline}</strong>. ${riskState === 'Elevated' ? 'Reduce new exposure until process quality improves.' : 'Risk state is acceptable. Continue enforcing event and sizing checks.'}`;
+    }
+
+    function addTrade() {
+      const ticker = (document.getElementById('tradeTicker').value || activeTicker).trim().toUpperCase();
+      const trade = { id: crypto.randomUUID(), date: document.getElementById('tradeDate').value || new Date().toISOString().split('T')[0], ticker, strategy: document.getElementById('tradeStrategy').value, status: document.getElementById('tradeStatus').value, pnl: Number(document.getElementById('tradePnl').value || 0), risk: Number(document.getElementById('tradeRisk').value || 0), thesis: document.getElementById('tradeThesis').value || 'Thesis pending.', lesson: document.getElementById('tradeLesson').value || 'Exit plan needs tightening.', discipline: 80 };
+      trades.unshift(trade);
+      saveTrades();
+      renderJournal();
+      showModule('journalModule');
+      showToast('Trade logged to journal.');
+    }
+
+    function deleteTrade(id) {
+      trades = trades.filter(t => t.id !== id);
+      saveTrades();
+      renderJournal();
+      showToast('Trade deleted.');
+    }
+
+    function updateDataCount() {
+      const el = document.getElementById('dataCount');
+      if (el) el.textContent = trades.length;
+    }
+
+    function csvEscape(value) {
+      const text = String(value ?? '');
+      return '"' + text.replace(/"/g, '""') + '"';
+    }
+
+    function exportCSV() {
+      const headers = ['date','ticker','strategy','status','pnl','risk','thesis','lesson','discipline'];
+      const rows = trades.map(t => headers.map(h => csvEscape(t[h])).join(','));
+      const csv = [headers.join(','), ...rows].join('\n');
+      downloadFile('ingstrid-trade-journal.csv', csv, 'text/csv;charset=utf-8');
+      showToast('CSV exported.');
+    }
+
+    function parseCSV(text) {
+      const rows = [];
+      let row = [], field = '', inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i], next = text[i+1];
+        if (c === '"' && inQuotes && next === '"') { field += '"'; i++; }
+        else if (c === '"') { inQuotes = !inQuotes; }
+        else if (c === ',' && !inQuotes) { row.push(field); field = ''; }
+        else if ((c === '\n' || c === '\r') && !inQuotes) {
+          if (field || row.length) { row.push(field); rows.push(row); row = []; field = ''; }
+          if (c === '\r' && next === '\n') i++;
+        } else field += c;
+      }
+      if (field || row.length) { row.push(field); rows.push(row); }
+      return rows;
+    }
+
+    function importCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const rows = parseCSV(String(reader.result || ''));
+        if (rows.length < 2) { showToast('CSV has no trade rows.'); return; }
+        const headers = rows[0].map(h => h.trim().toLowerCase());
+        const required = ['date','ticker','strategy','status'];
+        const missing = required.filter(h => !headers.includes(h));
+        if (missing.length) { showToast('CSV missing: ' + missing.join(', ')); return; }
+        const imported = rows.slice(1).filter(r => r.some(Boolean)).map(r => {
+          const obj = {};
+          headers.forEach((h, idx) => obj[h] = r[idx] ?? '');
+          return { id: crypto.randomUUID(), date: obj.date || new Date().toISOString().split('T')[0], ticker: String(obj.ticker || '').toUpperCase(), strategy: obj.strategy || 'Unknown', status: obj.status || 'Planned', pnl: Number(obj.pnl || 0), risk: Number(obj.risk || 0), thesis: obj.thesis || 'Imported trade.', lesson: obj.lesson || '', discipline: Number(obj.discipline || 80) };
+        });
+        trades = [...imported, ...trades];
+        saveTrades();
+        renderJournal();
+        showModule('journalModule');
+        showToast(imported.length + ' trades imported.');
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    function backupJSON() {
+      const payload = { app: 'Ingstrid Terminal Dashboard', version: '3.1', exportedAt: new Date().toISOString(), trades };
+      downloadFile('ingstrid-terminal-backup.json', JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+      showToast('JSON backup downloaded.');
+    }
+
+    function restoreJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          const restored = Array.isArray(parsed) ? parsed : parsed.trades;
+          if (!Array.isArray(restored)) throw new Error('No trades array found.');
+          trades = restored.map(t => ({ id: t.id || crypto.randomUUID(), date: t.date || '', ticker: String(t.ticker || '').toUpperCase(), strategy: t.strategy || '', status: t.status || 'Planned', pnl: Number(t.pnl || 0), risk: Number(t.risk || 0), thesis: t.thesis || '', lesson: t.lesson || '', discipline: Number(t.discipline || 80) }));
+          saveTrades();
+          renderJournal();
+          showModule('journalModule');
+          showToast('JSON restored.');
+        } catch (err) {
+          showToast('Restore failed: invalid JSON.');
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    function clearJournal() {
+      if (!confirm('Clear all journal entries from this browser? Export a backup first if needed.')) return;
+      trades = [];
+      saveTrades();
+      renderJournal();
+      showToast('Journal cleared.');
+    }
+
+    function restoreSampleData() {
+      if (!confirm('Replace current journal with sample data?')) return;
+      trades = sampleTrades.map(t => ({ ...t, id: crypto.randomUUID() }));
+      saveTrades();
+      renderJournal();
+      showToast('Sample data restored.');
+    }
+
+    function downloadFile(filename, content, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function showModule(id, btn) {
+      document.querySelectorAll('.module-view').forEach(v => v.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.querySelectorAll('.function-key').forEach(k => k.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      const titles = { overviewModule:'Overview Module', optionsModule:'Option Chain', strategyModule:'Strategy Builder', journalModule:'Trade Journal', riskModule:'Risk Console', tradeModule:'Trade Logger', dataModule:'Data Control' };
+      document.getElementById('moduleTitle').textContent = titles[id] || 'Module';
+      if (id === 'strategyModule') buildStrategy();
+      if (id === 'optionsModule') renderOptions();
+      if (id === 'journalModule') renderJournal();
+      if (id === 'riskModule') renderRisk();
+      if (id === 'dataModule') updateDataCount();
+    }
+
+    function handleCommand(e) { if (e.key === 'Enter') runCommand(); }
+
+    function runCommand() {
+      const raw = document.getElementById('commandInput').value.trim().toUpperCase();
+      const parts = raw.split(/\s+/);
+      const maybeTicker = parts[0];
+      if (securities[maybeTicker]) setTicker(maybeTicker);
+      if (raw.includes('OC') || raw.includes('OPTION')) showModule('optionsModule');
+      else if (raw.includes('JOURNAL') || raw.includes('JNL')) showModule('journalModule');
+      else if (raw.includes('RISK')) showModule('riskModule');
+      else if (raw.includes('STGY') || raw.includes('STRATEGY')) showModule('strategyModule');
+      else if (raw.includes('DATA') || raw.includes('CSV') || raw.includes('BACKUP')) showModule('dataModule');
+      else showModule('overviewModule');
+      showToast('Command executed: ' + raw);
+    }
+
+    document.getElementById('tradeDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('tradeTicker').value = activeTicker;
+    renderTape();
+    renderWatchlist();
+    renderSecurity();
+    renderOptions();
+    renderNews();
+    renderJournal();
+    renderRisk();
+    buildStrategy();
+    updateDataCount();
+  </script>
+</body>
+</html>
